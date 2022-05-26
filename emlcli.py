@@ -20,13 +20,14 @@ def prepare_args():
     args = parser.parse_args()
     return args
 
-def generate_config(path=None):
+def generate_config(cfg_path=None, vault_path=None):
     """
     Generates a config file in tmp directory
     """
 
     tmp_cfg="""
 {   
+    "vault_path": "{vault_path}",
     "sources":[
         {
             "name":"Source 1",
@@ -47,12 +48,12 @@ def generate_config(path=None):
     "operators" : []
 }  
     """
-    if(path is None):
-        path = "/tmp/emlcfg.json"
-    if not os.path.exists(path):
-        print("Config file not found, generating new config file at: ", path)
-        with open(path,"w") as f:
-            f.write(tmp_cfg)
+    if(cfg_path is None):
+        cfg_path = "/tmp/emlcfg.json"
+    if not os.path.exists(cfg_path):
+        print("Config file not found, generating new config file at: ", cfg_path)
+        with open(cfg_path,"w") as f:
+            f.write(tmp_cfg.format(vault_path=vault_path))
 
 def main():
     args = prepare_args()
@@ -62,18 +63,28 @@ def main():
             generate_config(args.config)
         config= args.config
     else:
-        generate_config()
+        generate_config(args.output)
         config= "/tmp/emlcfg.json"
     
 
     e = EMLAssess(args.target_path, is_directory=args.directory, recursive=args.recursive, config_path=config)
         
 
-    reports = e.scan()
+    results = e.scan()
+    if(type(results) is list):
+        for report in results:
+            if(args.output):
+                print("writing report to: ", args.output+"/"+report.eml.header["subject"]+"_report.json")
+                report.to_file(f"{args.output}/{report.eml.md5}/{report.eml.header['subject']}_report.json")
 
-    for report in reports:
-        pprint(report.to_dict())
-        print("\n############################################################\n")
+            pprint(report.to_dict()["eml"])
+            print("\n############################################################\n")
+    else:
+        pprint(results.to_dict()["eml"])
+        if(args.output):
+            print(f"writing report to: {args.output}/{results.eml.md5}/{results.eml.header['subject']}_report.json")
+            results.to_file(f"{args.output}/{results.eml.md5}/{results.eml.header['subject']}_report.json")
+
         #print("EML PATH: ",report.eml.get_path())
         #print("\tService Reports: ", len(report.service_reports))
         # for sr in report.service_reports:

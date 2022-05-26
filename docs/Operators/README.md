@@ -1,6 +1,6 @@
 # Operators
 
-Operators take in [EML Reports](/docs/Reports) and take action with them. 
+Operators take in [EML Reports](../Reports) and take action with them. 
 
 ## Obsidian (Markdown) Operator
 

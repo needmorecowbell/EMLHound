@@ -1,17 +1,24 @@
 {   
-    "vault_path":"/home/user/eml_corpus/VAULT/",
-
+    "vault_path":"/home/adam/Desktop/vault",
     "sources":[
         {
             "name":"Source 1",
             "type":"local",
-            "remove_from_source":true,
+            "remove_from_source":false,
             "path":"/home/adam/Desktop/eml_ingress"
         }
     ],
 
     "services" : [
         {
+            "enabled": false,
+            "type": "hybrid_analysis",
+            "name":"Hybrid Analysis Service",
+            "description":"Checks all executable attachments with Hybrid Analysis",
+            "api_key":""
+        },
+        {
+            "enabled":false,
             "type" : "external",
             "target": "ip",
             "command" : "curl ipinfo.io/{ip}",
@@ -21,6 +28,7 @@
         },
         {
             "type" : "eml_parser",
+            "enabled": true,
             "name" : "EML Parser Service",
             "description" : "EML Parser, parses out EML body contents",
             "properties" : {
@@ -30,14 +38,6 @@
         }
         ],
 
-    "operators":[{
-        "name":"operator1",
-        "description":"operator1 description",
-        "tags":["tag1","tag2"],
-        "properties":{
-            "property1":"value1",
-            "property2":"value2"
-        }
-    }]
+    "operators":[]
 
 }

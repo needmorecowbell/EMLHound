@@ -1,3 +1,4 @@
 eml_parser[filemagic]
+requests
 watchdog
 

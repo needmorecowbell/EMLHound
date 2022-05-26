@@ -33,5 +33,5 @@ For each EML file, an initial extraction is performed
          
         - Sandboxing
 
-After the initial check, the scan is sent to multiple [Services](/docs/Services/README.md) for data enrichment:
+After the initial check, the scan is sent to multiple [Services](../Services/README.md) for data enrichment:
     - do we want to keep the file?

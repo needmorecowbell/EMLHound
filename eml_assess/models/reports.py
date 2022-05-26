@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Dict, List
 from eml_assess.models.eml import EML
 import uuid
+import json
 
 
 class Report():
@@ -30,8 +31,32 @@ class Report():
         return self.timestamp
     
     def __str__(self)->str:
-        return f"Generic Report [{self.report_id}] <{self.timestamp}>"
+        return f"Generic Report [{self.report_id}] <{self.timestamp.isoformat()}>"
 
+    def to_dict(self,path:str)->Dict:
+        return {
+            "report_id":str(self.report_id),
+            "timestamp": self.timestamp
+        }
+    def to_file(self, path:str)->None:
+        """
+        Writes the report to a file.
+
+        :param path: str
+        :return: None
+        """
+
+        def json_serial(obj):
+            if isinstance(obj, datetime):
+                serial = obj.isoformat()
+                return serial
+
+        # dump to json file
+        try:
+            with open(path, 'w') as f:
+                json.dump(self.to_dict(), f, default=json_serial,indent=4)
+        except Exception as e:
+            print("Error writing report to file: ", e)
 
 class ServiceReport(Report):
     """ServiceReport
@@ -39,10 +64,11 @@ class ServiceReport(Report):
     Report for a Service result. Includes the response, service name, timestamp, execution time, and results from the Service that was run.
     """
 
-    def __init__(self,response:str,service_name:str,timestamp:datetime, exec_time:float, results:Dict):
+    def __init__(self,response:str,service_name:str,service_type:str, timestamp:datetime, exec_time:float, results:Dict):
         super().__init__(timestamp)
         self.response=response
         self.service_name=service_name
+        self.service_type=service_type
         self.exec_time=exec_time
         self.results=results
 
@@ -53,8 +79,9 @@ class ServiceReport(Report):
         return {
             "response":self.response,
             "service_name":self.service_name,
-            "report id":self.report_id,
-            "timestamp":self.timestamp,
+            "service_type":self.service_type,
+            "report_id":str(self.report_id),
+            "timestamp":self.timestamp.isoformat(),
             "exec_time":self.exec_time,
             "results":self.results
         }
@@ -79,8 +106,9 @@ class EMLReport(Report):
 
     def to_dict(self):
         return {
-            "eml_path": self.eml.path,
+            "eml":self.eml.to_dict(),
             "service_reports": [sr.to_dict() for sr in self.service_reports],
             "timestamp": self.timestamp.isoformat(),
-            "report_id": self.report_id
+            "report_id": str(self.report_id)
         }
+    
