@@ -1,0 +1,43 @@
+{   
+    "vault_path":"/home/user/eml_corpus/VAULT/",
+
+    "sources":[
+        {
+            "name":"Source 1",
+            "type":"local",
+            "remove_from_source":true,
+            "path":"/home/adam/Desktop/eml_ingress"
+        }
+    ],
+
+    "services" : [
+        {
+            "type" : "external",
+            "target": "ip",
+            "command" : "curl ipinfo.io/{ip}",
+            "schedule": "0",
+            "name" : "IPinfo analysis",
+            "description" : "calls out to <external_service_name> to perform analysis, returning a json result"
+        },
+        {
+            "type" : "eml_parser",
+            "name" : "EML Parser Service",
+            "description" : "EML Parser, parses out EML body contents",
+            "properties" : {
+                "property1" : "value1",
+                "property2" : "value2"
+            }
+        }
+        ],
+
+    "operators":[{
+        "name":"operator1",
+        "description":"operator1 description",
+        "tags":["tag1","tag2"],
+        "properties":{
+            "property1":"value1",
+            "property2":"value2"
+        }
+    }]
+
+}
