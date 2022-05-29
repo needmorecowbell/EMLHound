@@ -1,119 +1,114 @@
 import os
 from typing import Dict, List
-import shutil
 from eml_assess.models.eml import EML
 import json
 from eml_assess.models.reports import EMLReport, ServiceReport
 from eml_assess.services.eml_parser import EMLParserService
+from eml_assess.config import Config
 from eml_assess.services.external import ExternalService
 from eml_assess.services.ipinfo import IPInfoService
-
+from eml_assess.sources.local import LocalSource
+from eml_assess.vaultman import VaultMan
+import logging
 class EMLAssess():
 
-    def __init__(self,target:str, is_directory:bool=False, recursive:bool=False, config_path=None):
-        self.target = target
-        self.is_directory = is_directory
-        self.recursive = recursive
+    def __init__(self, vman_path:str=None, config_path=None):
+        self.sources = []
+        self.operators= []
+
         if(config_path): 
-            self.config = self.parse_config(config_path)
+            self.config = Config(config_path)
+            self.activate_sources()
+        self.config = None
+
+        if(vman_path):
+            self.vman = VaultMan(vman_path) # vault manager
         else:
-            self.config = self.parse_config("config.json")
+            self.vman = None
 
+    def activate_sources(self):
+        """Go through all sources enabled in the config and load them into the EMLAssess object"""
 
-    def parse_config(self,cfg_path) ->Dict:
-        """
-        Parses the config file
-        
-        :param cfg_path: Path to the config file
-        :return: Dict of config values
-        """
+        assert self.config is not None, "Config must be provided"
 
-        try:
-            with open(cfg_path) as f:
-                config = json.load(f)
-            
-            return config
-        except Exception as e:
-            print("Error loading config file: ", e)
-            return {}
+        for source in self.config.config["sources"]:
+            if(source["enabled"]):
+                match source["type"]:
+                    case "local":
+                        self.sources.append(LocalSource(source["path"], source["name"]))
 
-    def scan(self) -> EMLReport or List[EMLReport]:
+    def scan(self, path:str) -> EMLReport or List[EMLReport]:
         """
         Scans the target directory or file, giving back a report of the findings
 
         :return: EMLReport or List[EMLReport]
         """
-        if(self.is_directory):
+        
+        assert os.path.exists(path),"scan error: directory or file path does not exist"
+
+        if(os.path.isdir(path)):
             results = self.scan_directory()
         else:
-            results = self.scan_eml()
+            eml= EML(path)
+            results = self.scan_eml(eml)
 
         return results
 
-    def initialize_workspace(self, eml:EML, path:str=None) -> str:
-        """ Stores the eml file in a new vault directory
-        """
 
-        if(path is None):
-            path = self.config["vault_path"]
-        
-        workspace_path = path+"/"+eml.md5
-
-        
-        if(not os.path.exists(workspace_path)):
-            os.mkdir(workspace_path)
-            os.mkdir(workspace_path+"/attachments")
-            os.mkdir(workspace_path+"/service_reports")
-            shutil.copy(eml.path,workspace_path+"/"+eml.md5)
-        return workspace_path
-        # get the hash of the eml file that is 
-        
-
-    def scan_eml(self,eml_path:str=None) -> EMLReport:
+    def scan_eml(self,eml:EML, check_vault:bool=True) -> EMLReport:
         """
         Scans an EML file, giving back an EMLReport of the findings
         
         :param eml_path: Path to the EML file
         :return: EMLReport
         """
-        if(eml_path is None):
-            eml_path = self.target
+        if(self.vman is not None and check_vault):
+            if(self.vman.in_vault(eml)):
+                logging.log(msg=f'EML {eml.md5} already in vault', level=logging.INFO)
+                return self.vman.retrieve_report_from_vault(eml)
 
-        eml = EML(eml_path)
+        if(self.vman):
+            workspace = self.vman.initialize_workspace(eml)
+        report= EMLReport(eml, service_reports=[])
+        if(self.config):
 
-        workspace = self.initialize_workspace(eml)
-
-        report= EMLReport(eml)
-
-        # check email with all enabled services
-        for service in self.config["services"]:
-            if(service["enabled"]):
-                # Handle external service types
-                if(service["type"]=="external"):
-                    if(service["target"] == "ip"):
-                        for ip in eml.get_ip_addresses():
-                            sr = self.execute_service(service["type"], ip=ip, service_cfg=service)
-                    elif(service["target"] == "eml"):
-                        sr = self.execute_service(service["type"], eml=eml, service_cfg=service)
+            # check email with all enabled services
+            for service in self.config.config["services"]:
+                if(service["enabled"]):
+                    # Handle external service types
+                    if(service["type"]=="external"):
+                        if(service["target"] == "ip"):
+                            for ip in eml.get_ip_addresses():
+                                sr = self.execute_service(service["type"], ip=ip, service_cfg=service)
+                        elif(service["target"] == "eml"):
+                            sr = self.execute_service(service["type"], eml=eml, service_cfg=service)
+                        else:
+                            sr = self.execute_service(service["type"], service_cfg=service)
                     else:
-                        sr = self.execute_service(service["type"], service_cfg=service)
-                else:
-                    # If any other service type, just run it
-                    sr = self.execute_service(service["type"], eml=eml)
-                
-                # Add service report to workspace
-                sr.to_file(f"{workspace}/service_reports/{sr.service_name}_report.json")
+                        # If any other service type, just run it
+                        sr = self.execute_service(service["type"], eml=eml)
+                    
+                    # go back in after each service runs to re-enrich the report, in case a service is dependent on another's information
+                    report = self.enrich_eml_report(report, sr)
+                    
+                    if(self.vman):
+                        # Add service report to workspace
+                        self.vman.add_service_report_to_workspace(sr,eml)
 
-                # go back in after each service runs to re-enrich the report, in case a service is dependent on another's information
-                report = self.enrich_eml_report(report, sr)
+        else: # scan this report using default services
+            sr = self.execute_service("eml_parser",eml=eml)
+            report = self.enrich_eml_report(report, sr)
+
+            if(self.vman):
+                self.vman.add_service_report_to_workspace(sr,eml)
+                logging.log(msg=f"EML {report.eml.md5} service report added to Vault", level=logging.INFO)
 
 
 
-        # Save all attachments
-        for attachment in report.eml.attachments:
-            attachment.to_file(f"{workspace}/attachments/{attachment.hashes['md5']}")
-
-
+        if(self.vman):
+            # Save all attachments
+            for attachment in report.eml.attachments:
+                self.vman.add_attachment_to_workspace(attachment,report.eml)
 
 
         #report.add_service_report(self.execute_service("eml_parser", eml=eml)) # parsing must be done first
@@ -150,7 +145,7 @@ class EMLAssess():
         match service_type:
             case "eml_parser":
                 if(eml):
-                    service = EMLParserService(eml)
+                    service = EMLParserService(eml,self.config,self.vman)
                     return service.execute()
                 raise Exception("No EML object provided")
 
@@ -161,7 +156,6 @@ class EMLAssess():
                 raise Exception("No IP address provided")
 
             case "external":
-                print(service_cfg)
                 if(service_cfg):
                     if (ip):
                         service = ExternalService(service_cfg["name"], service_cfg["command"],service_cfg["schedule"], ip=ip )
@@ -198,36 +192,37 @@ class EMLAssess():
         return report.eml.get_header()
     
 
-    def scan_directory(self, target=None, recursive=None) -> List[EMLReport]:
+    def scan_directory(self, path:str, recursive=False) -> List[EMLReport]:
         """Scans a directory, giving back a list of EMLReport objects
         
         :param path: Path to the directory
         :param recursive: Whether to scan subdirectories
         :return: List of EMLReport objects"""
 
-        if recursive is None:
-            recursive = self.recursive
-        if target is None:
-            target=self.target
+
+        assert os.path.exists(path), "scan error: directory does not exist"
 
         eml_files = []
+
         if(recursive):
-            for root, dirs, files in os.walk(target):
+            for root, dirs, files in os.walk(path):
                 for file in files:
                     if(file.endswith(".eml")):
                         eml_path = os.path.join(root, file)
                         eml_files.append(eml_path)
         else:
             # get all files in directory
-            for file in os.listdir(target):
-                if(os.path.isfile(os.path.join(target,file))):
-                    eml_files.append(os.path.join(target,file))
+            for file in os.listdir(path):
+                if(os.path.isfile(os.path.join(path,file))):
+                    eml_files.append(os.path.join(path,file))
         
         # scan each file
         reports = []
         for fp in eml_files:
-            reports.append(self.scan_eml(fp))
-        
+            eml = EML(fp, attachments=[])
+            report= self.scan_eml(eml)
+            reports.append(report)                
+
         return reports
 
     

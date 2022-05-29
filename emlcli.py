@@ -4,6 +4,8 @@ import os
 from pprint import pprint
 import json
 
+from eml_assess.models.eml import EML
+
 def prepare_args():
     art= ''''''
     print(art+"Welcome to EML ASSESS CLI\n")
@@ -14,7 +16,7 @@ def prepare_args():
     parser.add_argument("-r", "--recursive", help="search a directory recursively", action="store_const", const=True, default=False)
     parser.add_argument("-c", "--config", type=str, help="config file path", required=False)
     parser.add_argument("-o", "--output", type=str, help="output file/directory/workspace path", required=False)
-
+    parser.add_argument("--generate-config", help="generate a config file in /tmp", action="store_true")
     parser.add_argument("target_path", help="path to eml file or directory of emails")
 
     args = parser.parse_args()
@@ -60,30 +62,48 @@ def main():
     
     if(args.config):
         if(not os.path.exists(args.config)):
-            generate_config(args.config)
-        config= args.config
-    else:
-        generate_config(args.output)
-        config= "/tmp/emlcfg.json"
-    
+            if(args.generate_config):
+                print("Generating config file at: ", args.config)
+                generate_config(args.config)
+            else:
+                print("Config file not found, correct path or pass --generate-config to generate a new config file in specified path")
+                exit()
 
-    e = EMLAssess(args.target_path, is_directory=args.directory, recursive=args.recursive, config_path=config)
+
+    e = EMLAssess(config_path=args.config,vman_path=args.output)
         
+    if(args.directory):
+        results = e.scan_directory(args.target_path, args.recursive)
 
-    results = e.scan()
+    else: # scan single eml
+        if(args.verbose):
+            print("Scanning file: ", args.target_path)
+        try:
+            eml = EML(args.target_path)
+        except Exception as e:
+            print(e)
+
+        results = e.scan_eml(eml)
+
     if(type(results) is list):
         for report in results:
             if(args.output):
-                print("writing report to: ", args.output+"/"+report.eml.header["subject"]+"_report.json")
-                report.to_file(f"{args.output}/{report.eml.md5}/{report.eml.header['subject']}_report.json")
+                if(os.path.exists(f"{args.output}/{report.eml.md5}/report.json")):
+                    print(f"Report already exists for {report.eml.md5}, skipping")
+                else:    
+                    print("writing report to: ", f"{args.output}/{report.eml.md5}/report.json")
+                    report.to_file(f"{args.output}/{report.eml.md5}/report.json")
 
-            pprint(report.to_dict()["eml"])
-            print("\n############################################################\n")
+           # pprint(report.to_dict())
+        print("\n############################################################\n")
     else:
         pprint(results.to_dict()["eml"])
         if(args.output):
-            print(f"writing report to: {args.output}/{results.eml.md5}/{results.eml.header['subject']}_report.json")
-            results.to_file(f"{args.output}/{results.eml.md5}/{results.eml.header['subject']}_report.json")
+            if(os.path.exists(f"{args.output}/{results.eml.md5}/report.json")):
+                print("Report already exists, skipping")
+            else:
+                print("Writing report to: ", f"{args.output}/{results.eml.md5}/report.json")
+                results.to_file(f"{args.output}/{results.eml.md5}/report.json")
 
         #print("EML PATH: ",report.eml.get_path())
         #print("\tService Reports: ", len(report.service_reports))

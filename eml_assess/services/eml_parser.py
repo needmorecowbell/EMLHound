@@ -1,16 +1,17 @@
 from datetime import datetime
-import json
 import eml_parser as emlp
 from eml_assess.models.reports import EMLReport, ServiceReport
 from eml_assess.models.eml import EML
 from eml_assess.models.eml_attachment import EMLAttachment
 from eml_assess.services.service import Service
 import time
-from pprint import pprint
+from eml_assess.config import Config
+from eml_assess.vaultman import VaultMan
+import logging
 
 class EMLParserService(Service):
-  def __init__(self, eml:EML, name: str = "EMLParser Service", ):
-      super().__init__(name)
+  def __init__(self, eml:EML, config:Config=None, vman:VaultMan=None,  name: str = "EMLParser Service"):
+      super().__init__(config,vman,name)
       self.eml= eml
       self.service_type="eml_parser"
 
@@ -65,7 +66,7 @@ class EMLParserService(Service):
       parsed_eml = ep.decode_email(self.eml.path)
 
     except Exception as e:
-      print("eml parser failure: ", e)
+      logging.log(msg="eml parser failure: "+str(e), level=logging.ERROR)
       response = "failure"
     finally:
       elapsed = time.time() - start

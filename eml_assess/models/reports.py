@@ -3,7 +3,7 @@ from typing import Dict, List
 from eml_assess.models.eml import EML
 import uuid
 import json
-
+import logging
 
 class Report():
     """Report
@@ -56,7 +56,7 @@ class Report():
             with open(path, 'w') as f:
                 json.dump(self.to_dict(), f, default=json_serial,indent=4)
         except Exception as e:
-            print("Error writing report to file: ", e)
+            logging.log(msg=f"Error writing report to file: {e}", level=logging.ERROR)
 
 class ServiceReport(Report):
     """ServiceReport
@@ -81,7 +81,7 @@ class ServiceReport(Report):
             "service_name":self.service_name,
             "service_type":self.service_type,
             "report_id":str(self.report_id),
-            "timestamp":self.timestamp.isoformat(),
+            "timestamp":self.timestamp,
             "exec_time":self.exec_time,
             "results":self.results
         }
@@ -102,13 +102,12 @@ class EMLReport(Report):
 
     def __str__(self):
         return f"""EML Report #{self.report_id}: {self.timestamp} with {len(self.service_reports)} child service reports."""
-    
 
     def to_dict(self):
         return {
             "eml":self.eml.to_dict(),
             "service_reports": [sr.to_dict() for sr in self.service_reports],
-            "timestamp": self.timestamp.isoformat(),
+            "timestamp": self.timestamp,
             "report_id": str(self.report_id)
         }
     

@@ -3,7 +3,7 @@ from eml_assess.services.service import Service
 from datetime import datetime
 import requests
 import time
-
+import logging
 
 class IPInfoService(Service):
     """Service to get IP information from a given IP address"""
@@ -24,7 +24,7 @@ class IPInfoService(Service):
             self.results = r.json()
             response="success"
         except Exception as e:
-            print(e)
+            logging.log(msg=e)
             response="failure"
         finally:
             elapsed= time.time() - start

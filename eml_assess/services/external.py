@@ -6,7 +6,7 @@ import time
 from datetime import datetime
 from eml_assess.models.reports import ServiceReport
 import json 
-
+import logging
 class ExternalService(Service):
     """Generic Service for Running External System Commands"""
     def __init__(self, name:str,command:str, schedule:str, ip:str=None, eml:EML=None):
@@ -46,7 +46,7 @@ class ExternalService(Service):
             results= json.loads(output)
 
         except Exception as e:
-            print(e)
+            logging.log(e)
 
         elapsed = time.time() - start
 

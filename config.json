@@ -2,7 +2,8 @@
     "vault_path":"/home/adam/Desktop/vault",
     "sources":[
         {
-            "name":"Source 1",
+            "name":"Local EML Ingress",
+            "enabled":true,
             "type":"local",
             "remove_from_source":false,
             "path":"/home/adam/Desktop/eml_ingress"

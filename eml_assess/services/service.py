@@ -1,12 +1,15 @@
 from datetime import datetime
 import time
+from eml_assess.config import Config
 from eml_assess.models.eml import EML
 from eml_assess.models.reports import EMLReport, ServiceReport
-
+from eml_assess.vaultman import VaultMan
 class Service():
     """Base Service Class"""
-    def __init__(self, name:str="Unnamed Service"):
+    def __init__(self, config:Config=None, vman:VaultMan=None, name:str="Unnamed Service"):
         self.name=name
+        self.config = config
+        self.vman = vman
         self.service_type="base_service"
 
     def enrich(self, report:EMLReport, service_report:ServiceReport )-> EMLReport:
