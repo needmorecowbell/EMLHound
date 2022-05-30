@@ -1,5 +1,6 @@
 {   
     "vault_path":"/home/user/Desktop/vault",
+    
     "redis":{
         "host":"localhost",
         "port":6379
