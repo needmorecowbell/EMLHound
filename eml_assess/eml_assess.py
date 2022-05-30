@@ -1,58 +1,125 @@
 import os
+import threading
 from typing import Dict, List
 from eml_assess.models.eml import EML
-import json
 from eml_assess.models.reports import EMLReport, ServiceReport
 from eml_assess.services.eml_parser import EMLParserService
 from eml_assess.config import Config
 from eml_assess.services.external import ExternalService
 from eml_assess.services.ipinfo import IPInfoService
 from eml_assess.sources.local import LocalSource
+from eml_assess.sources.source import Source
 from eml_assess.vaultman import VaultMan
+import time 
+
 import logging
+
 class EMLAssess():
 
     def __init__(self, vman_path:str=None, config_path=None):
+        format = f"[%(levelname)s] %(asctime)s <%(filename)s> %(funcName)s_L%(lineno)d- %(message)s"
+        logging.basicConfig(format=format, level=logging.INFO, datefmt="%H:%M:%S")
         self.sources = []
         self.operators= []
+        self.source_threads = []
+        if(config_path):
+            try:
+                import redis
+            except:
+                logging.log(msg="Redis module not found, must run for daemon", level=logging.ERROR)
 
-        if(config_path): 
             self.config = Config(config_path)
-            self.activate_sources()
-        self.config = None
+            self.vman = VaultMan(self.config.config["vault_path"])
 
-        if(vman_path):
-            self.vman = VaultMan(vman_path) # vault manager
+            try:
+                self.eml_pool = redis.Redis(host=self.config.config["redis"]["host"], port=self.config.config["redis"]["port"])
+                logging.log(msg="Connected to Redis", level=logging.INFO)
+
+                # clear redis queue on start
+                for i in range(0, self.eml_pool.llen("eml_queue")):
+                    self.eml_pool.lpop("eml_queue")
+
+                logging.log(msg="Cleared redis eml queue: "+str(self.eml_pool.llen("eml_queue")), level=logging.INFO)
+
+            except Exception as e:
+                logging.log(msg=f"Redis error: {e}", level=logging.ERROR)
+            self.sources = self.load_sources(self.config.config["sources"])
+
         else:
-            self.vman = None
+            self.config = None
+            self.vman = VaultMan(vman_path) if vman_path else None # vault manager
+            
 
-    def activate_sources(self):
-        """Go through all sources enabled in the config and load them into the EMLAssess object"""
+    def run(self):
+        """Runs EMLAssess as a daemon"""
 
-        assert self.config is not None, "Config must be provided"
+        assert self.config, "No config file provided"
+        self.activate_sources()
 
-        for source in self.config.config["sources"]:
+        try:
+            while True:
+                if(self.eml_pool.llen("eml_queue")>0):
+                    eml_path = self.eml_pool.lpop("eml_queue")
+                    logging.log(msg=f"Retrieved eml from queue", level=logging.INFO)
+                    eml = EML(eml_path, attachments=[])
+
+                    report = self.scan_eml(eml,check_vault=False)
+                    print("report: ", report)
+                    # save report to vault
+
+                    report.eml.path=eml_path
+                    self.vman.add_eml_report_to_workspace(report)
+                    logging.log(msg=f"EML Report {eml.md5} Scan Complete, added report to workspace", level=logging.INFO)
+
+                time.sleep(1)
+
+        except KeyboardInterrupt:
+            print("Exiting")
+            exit()
+
+
+    def load_sources(self, sources_conf:Dict)->List[Source]:
+        """Loads sources from the config file
+        
+        :param sources_conf: Dict of sources from the config file
+        :return: List of Source objects"""
+
+        sources = []
+
+        for source in sources_conf:
             if(source["enabled"]):
                 match source["type"]:
                     case "local":
-                        self.sources.append(LocalSource(source["path"], source["name"]))
+                        sources.append(LocalSource(source["path"], source["recursive"], eml_pool=self.eml_pool, name=source["name"]))
+
+        return sources
+
+    def activate_sources(self):
+        """Go through all sources enabled in the config and load them into the EMLAssess object"""
+        logging.log(msg= "activating sources", level=logging.INFO)
+
+        for source in self.sources:
+            t= threading.Thread(target=source.activate, daemon=True)
+            self.source_threads.append(t)
+            t.start()
+            logging.log(msg=f"Activated source {source.name} on thread {t.name}", level=logging.INFO)
+        
 
     def scan(self, path:str) -> EMLReport or List[EMLReport]:
         """
         Scans the target directory or file, giving back a report of the findings
 
+        :param path: Path to the target directory or file
         :return: EMLReport or List[EMLReport]
         """
         
         assert os.path.exists(path),"scan error: directory or file path does not exist"
 
         if(os.path.isdir(path)):
-            results = self.scan_directory()
+            return self.scan_directory(path)
         else:
-            eml= EML(path)
-            results = self.scan_eml(eml)
+            return self.scan_eml(EML(path))
 
-        return results
 
 
     def scan_eml(self,eml:EML, check_vault:bool=True) -> EMLReport:
@@ -62,13 +129,18 @@ class EMLAssess():
         :param eml_path: Path to the EML file
         :return: EMLReport
         """
+
+        logging.log(msg="EML Scan entered: "+eml.md5, level=logging.INFO)
         if(self.vman is not None and check_vault):
             if(self.vman.in_vault(eml)):
                 logging.log(msg=f'EML {eml.md5} already in vault', level=logging.INFO)
                 return self.vman.retrieve_report_from_vault(eml)
 
+
         if(self.vman):
+            logging.log(msg=f"Initializing workspace for {eml.md5}", level=logging.INFO)
             workspace = self.vman.initialize_workspace(eml)
+
         report= EMLReport(eml, service_reports=[])
         if(self.config):
 
@@ -192,7 +264,7 @@ class EMLAssess():
         return report.eml.get_header()
     
 
-    def scan_directory(self, path:str, recursive=False) -> List[EMLReport]:
+    def scan_directory(self, path:str, recursive=False, check_vault=False) -> List[EMLReport]:
         """Scans a directory, giving back a list of EMLReport objects
         
         :param path: Path to the directory
@@ -208,19 +280,18 @@ class EMLAssess():
             for root, dirs, files in os.walk(path):
                 for file in files:
                     if(file.endswith(".eml")):
-                        eml_path = os.path.join(root, file)
-                        eml_files.append(eml_path)
+                        eml_files.append(os.path.join(root, file))
         else:
             # get all files in directory
             for file in os.listdir(path):
-                if(os.path.isfile(os.path.join(path,file))):
+                if(file.endswith(".eml")):
                     eml_files.append(os.path.join(path,file))
         
         # scan each file
         reports = []
         for fp in eml_files:
             eml = EML(fp, attachments=[])
-            report= self.scan_eml(eml)
+            report= self.scan_eml(eml, check_vault=check_vault)
             reports.append(report)                
 
         return reports

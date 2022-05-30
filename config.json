@@ -1,11 +1,16 @@
 {   
     "vault_path":"/home/adam/Desktop/vault",
+    "redis":{
+        "host":"localhost",
+        "port":6379
+    },
     "sources":[
         {
             "name":"Local EML Ingress",
             "enabled":true,
             "type":"local",
-            "remove_from_source":false,
+            "recursive": true,
+            "delete_original":false,
             "path":"/home/adam/Desktop/eml_ingress"
         }
     ],

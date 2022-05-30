@@ -1,12 +1,10 @@
 from eml_assess.eml_assess import EMLAssess
-from pprint import pprint
 import os
 
-from eml_assess.vaultman import VaultMan 
 
 
 e = EMLAssess(vman_path="/home/adam/Desktop/vault")
-reports = e.scan_directory("/home/adam/Desktop/eml_ingress", recursive=False)
+reports = e.scan_directory("/home/adam/Desktop/bak", recursive=False, check_vault=False)
 
 
 for report in reports:

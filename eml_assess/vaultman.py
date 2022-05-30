@@ -39,13 +39,19 @@ class VaultMan():
 
             if(delete_original):
                 os.remove(eml.path)
-                eml.path = f"{workspace_path}/{eml.md5}"
+        else:
+            logging.log(msg=f"workspace for {eml.md5} exists", level=logging.WARNING)
             
         return workspace_path
     
     def add_service_report_to_workspace(self, sr:ServiceReport, eml:EML)->None:
         workspace= f"{self.path}/{eml.md5}"
         sr.to_file(f"{workspace}/service_reports/{sr.service_name}_report.json")
+
+    def add_eml_report_to_workspace(self, eml_report:EMLReport)->None:
+        workspace= f"{self.path}/{eml_report.eml.md5}"
+        eml_report.to_file(f"{workspace}/report.json")
+
 
     def add_attachment_to_workspace(self,attachment:EMLAttachment, eml:EML)->None:
         workspace= f"{self.path}/{eml.md5}"
@@ -86,6 +92,6 @@ class VaultMan():
                     )
                 return EMLReport(report_eml,service_reports=service_reports, timestamp=report["timestamp"])
         except Exception as e:
-            print(e)
             logging.log(msg=str(e), level=logging.ERROR)
+            return None
         

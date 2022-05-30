@@ -1,4 +1,5 @@
 eml_parser[filemagic]
 requests
+redis
 watchdog
 
