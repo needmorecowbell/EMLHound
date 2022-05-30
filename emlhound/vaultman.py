@@ -1,10 +1,10 @@
 from typing import List
-from eml_assess.config import Config
+from emlhound.config import Config
 import os
-from eml_assess.models.eml import EML
-from eml_assess.models.eml_attachment import EMLAttachment
+from emlhound.models.eml import EML
+from emlhound.models.eml_attachment import EMLAttachment
 
-from eml_assess.models.reports import EMLReport, ServiceReport
+from emlhound.models.reports import EMLReport, ServiceReport
 import json
 import shutil
 import logging
@@ -30,7 +30,7 @@ class VaultMan():
         stats = {}
         stats["vault_size"] = self.human_readable_bytes(self.get_size(self.path))
         stats["emails_in_vault"] = len(os.listdir(self.path))
-        stats["vault_attachments"] = len([self.get_attachments_from_workspace(eml_md5) for eml_md5 in os.listdir(self.path)])
+        #stats["vault_attachments"] = len([self.get_attachments_from_workspace(eml_md5) for eml_md5 in os.listdir(self.path)])
         
         return stats
 
@@ -65,7 +65,11 @@ class VaultMan():
         """
 
         if(os.path.isdir(path)):
-            return sum([entry.stat().st_size for entry in os.scandir(path)])
+            sum = 0
+            for dir,_,files in os.walk(path):
+                for file in files:
+                    sum += os.path.getsize(f"{dir}/{file}")
+            return sum
         else:
             return os.stat(path).st_size
 
@@ -136,6 +140,7 @@ class VaultMan():
             shutil.copy(eml.path,workspace_path+"/"+eml.md5)
 
             if(delete_original):
+                logging.info("Deleting original EML file"+str(eml.path))
                 os.remove(eml.path)
         else:
             logging.log(msg=f"workspace for {eml.md5} exists", level=logging.WARNING)

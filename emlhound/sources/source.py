@@ -1,7 +1,6 @@
-from eml_assess.vaultman import VaultMan
+from emlhound.vaultman import VaultMan
 import redis 
 
-import logging
 class Source():
     """Source
     

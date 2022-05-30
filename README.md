@@ -1,7 +1,4 @@
-# EML_Assess
-
-**NOTICE:** Don't touch this yet! Just jotting down ideas, nothing works
-
+# EMLHound
 
 ## Usage
 
@@ -14,10 +11,10 @@
 **Library**
 
 ```python
-from eml_assess.eml_assess import EMLAssess
+from emlhound.emlhound import EMLHound
 from pprint import pprint
 
-e = EMLAssess(target="/home/adam/Desktop/eml_ingress",is_directory=True,recursive=False)
+e = EMLHound(target="/home/adam/Desktop/eml_ingress",is_directory=True,recursive=False)
 reports = e.scan_directory()
 
 for report in reports:
@@ -32,10 +29,7 @@ for report in reports:
 **CLI**
 
 ```
-usage: emlcli.py [-h] [-v] [-d] [-r] [-c CONFIG] [-o OUTPUT] target_path
-
-positional arguments:
-  target_path           path to eml file or directory of emails
+usage: emlhcli.py [-h] [-v] [-d] [-r] [-c CONFIG] [-o OUTPUT] [--daemon] [--generate-config] [-t TARGET]
 
 options:
   -h, --help            show this help message and exit
@@ -46,6 +40,10 @@ options:
                         config file path
   -o OUTPUT, --output OUTPUT
                         output file/directory/workspace path
+  --daemon              run as a daemon, requires config
+  --generate-config     generate a config file in /tmp
+  -t TARGET, --target TARGET
+                        path to eml file or directory of emails
 ```
 
 `python3 emlcli.py -dr ~/Path/to/EML/Directory`

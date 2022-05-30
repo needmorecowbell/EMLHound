@@ -1,27 +1,40 @@
 import os
 import threading
 from typing import Dict, List
-from eml_assess.models.eml import EML
-from eml_assess.models.reports import EMLReport, ServiceReport
-from eml_assess.services.eml_parser import EMLParserService
-from eml_assess.config import Config
-from eml_assess.services.external import ExternalService
-from eml_assess.services.ipinfo import IPInfoService
-from eml_assess.sources.local import LocalSource
-from eml_assess.sources.source import Source
-from eml_assess.vaultman import VaultMan
+from emlhound.models.eml import EML
+from emlhound.models.reports import EMLReport, ServiceReport
+from emlhound.operators.operator import Operator
+from emlhound.plugins.plugin import Plugin
+from emlhound.services.eml_parser import EMLParserService
+from emlhound.config import Config
+from emlhound.services.external import ExternalService
+from emlhound.services.ipinfo import IPInfoService
+from emlhound.sources.local import LocalSource
+from emlhound.sources.source import Source
+from emlhound.vaultman import VaultMan
+from emlhound.plugins.api_server.app import APIServerPlugin
 import time 
 
 import logging
 
-class EMLAssess():
+class EMLHound():
+    """EMLHound Application"""
 
-    def __init__(self, vman_path:str=None, config_path=None):
+    def __init__(self, vman_path:str=None, config_path:str=None):
+
         format = f"[%(levelname)s] %(asctime)s <%(filename)s> %(funcName)s_L%(lineno)d- %(message)s"
         logging.basicConfig(format=format, level=logging.INFO, datefmt="%H:%M:%S")
+
+        logging.info("Initializing EMLHound")
         self.sources = []
-        self.operators= []
         self.source_threads = []
+
+        self.operators= []
+        self.operators_threads= []
+
+        self.plugins = []
+        self.plugin_threads = []
+
         if(config_path):
             try:
                 import redis
@@ -30,7 +43,6 @@ class EMLAssess():
 
             self.config = Config(config_path)
             self.vman = VaultMan(self.config.config["vault_path"])
-
             try:
                 self.eml_pool = redis.Redis(host=self.config.config["redis"]["host"], port=self.config.config["redis"]["port"])
                 logging.log(msg="Connected to Redis", level=logging.INFO)
@@ -43,7 +55,13 @@ class EMLAssess():
 
             except Exception as e:
                 logging.log(msg=f"Redis error: {e}", level=logging.ERROR)
+
             self.sources = self.load_sources(self.config.config["sources"])
+
+            self.operators = self.load_operators(self.config.config["operators"])
+
+            self.plugins = self.load_plugins(self.config.config["plugins"])
+
 
         else:
             self.config = None
@@ -51,10 +69,12 @@ class EMLAssess():
             
 
     def run(self):
-        """Runs EMLAssess as a daemon"""
+        """Runs EMLHound as a daemon"""
 
         assert self.config, "No config file provided"
         self.activate_sources()
+        self.activate_operators()
+        self.activate_plugins()
 
         try:
             while True:
@@ -64,8 +84,8 @@ class EMLAssess():
                     eml = EML(eml_path, attachments=[])
 
                     report = self.scan_eml(eml,check_vault=False)
-                    # save report to vault
 
+                    # save report to vault
                     report.eml.path=eml_path
                     self.vman.add_eml_report_to_workspace(report)
                     logging.log(msg=f"EML Report {eml.md5} Scan Complete, added report to workspace", level=logging.INFO)
@@ -93,15 +113,75 @@ class EMLAssess():
 
         return sources
 
+
+    def load_operators(self, op_conf:Dict)->List[Operator]:
+        """Loads operators from the config file
+        
+        :param op_conf: Dict of Operators from the config file
+        :return: List of Source Operators"""
+
+        ops = []
+
+        for op in op_conf:
+            if(op["enabled"]):
+                match op["type"]:
+                    case "obsidian":
+                        pass
+        return ops
+    
+
+    def load_plugins(self, plugin_conf:Dict)->List[Plugin]:
+        """Loads plugins from config file
+
+        :param plugin_conf: Dict of plugins from the config file
+        :return: List of Plugin objects"""
+        logging.info("Loading Plugins...")
+
+        plugins = []
+
+        for plugin in plugin_conf:
+            if(plugin["enabled"]):
+                match plugin["type"]:
+                    case "api_server":
+                        logging.info("Loading API Server Plugin")
+                        plugins.append(APIServerPlugin(eml_pool=self.eml_pool, vman=self.vman, port=plugin["port"],host=plugin["host"]))
+
+        return plugins
+
+
+    def activate_plugins(self):
+        """Go through all plugins enabled in the config and load them into the EMLHound object"""
+        logging.info("Activating Plugins")
+
+        for plugin in self.plugins:
+            t= threading.Thread(target=plugin.activate, daemon=True)
+            self.plugin_threads.append(t)
+            t.start()
+            logging.info(f"Activated Plugin {plugin.name} on thread {t.name}")
+    
+
+    def activate_operators(self):
+        """Go through all operators enabled in the config and load them into the EMLHound object"""
+
+        logging.info("Activating Operators")
+
+        for op in self.operators:
+            t= threading.Thread(target=op.activate, daemon=True)
+            self.operators_threads.append(t)
+            t.start()
+            logging.info(f"Activated Plugin {op.name} on thread {t.name}")
+    
+
+
     def activate_sources(self):
-        """Go through all sources enabled in the config and load them into the EMLAssess object"""
-        logging.log(msg= "activating sources", level=logging.INFO)
+        """Go through all sources enabled in the config and load them into the EMLHound object"""
+        logging.info("activating sources")
 
         for source in self.sources:
             t= threading.Thread(target=source.activate, daemon=True)
             self.source_threads.append(t)
             t.start()
-            logging.log(msg=f"Activated source {source.name} on thread {t.name}", level=logging.INFO)
+            logging.info(f"Activated source {source.name} on thread {t.name}")
         
 
     def scan(self, path:str) -> EMLReport or List[EMLReport]:

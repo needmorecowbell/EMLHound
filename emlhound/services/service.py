@@ -1,9 +1,9 @@
 from datetime import datetime
 import time
-from eml_assess.config import Config
-from eml_assess.models.eml import EML
-from eml_assess.models.reports import EMLReport, ServiceReport
-from eml_assess.vaultman import VaultMan
+from emlhound.config import Config
+from emlhound.models.eml import EML
+from emlhound.models.reports import EMLReport, ServiceReport
+from emlhound.vaultman import VaultMan
 class Service():
     """Base Service Class"""
     def __init__(self, config:Config=None, vman:VaultMan=None, name:str="Unnamed Service"):

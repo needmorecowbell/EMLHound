@@ -1,4 +1,4 @@
-from eml_assess.operators.operator import Operator
+from emlhound.operators.operator import Operator
 
 class VirusTotalOperator(Operator):
     """VirusTotalOperator

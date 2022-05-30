@@ -2,7 +2,7 @@ from typing import Dict, List
 import hashlib
 import magic
 
-from eml_assess.models.eml_attachment import EMLAttachment
+from emlhound.models.eml_attachment import EMLAttachment
 
 class EML():
     """

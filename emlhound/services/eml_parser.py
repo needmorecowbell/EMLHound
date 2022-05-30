@@ -1,12 +1,12 @@
 from datetime import datetime
 import eml_parser as emlp
-from eml_assess.models.reports import EMLReport, ServiceReport
-from eml_assess.models.eml import EML
-from eml_assess.models.eml_attachment import EMLAttachment
-from eml_assess.services.service import Service
+from emlhound.models.reports import EMLReport, ServiceReport
+from emlhound.models.eml import EML
+from emlhound.models.eml_attachment import EMLAttachment
+from emlhound.services.service import Service
 import time
-from eml_assess.config import Config
-from eml_assess.vaultman import VaultMan
+from emlhound.config import Config
+from emlhound.vaultman import VaultMan
 import logging
 
 class EMLParserService(Service):

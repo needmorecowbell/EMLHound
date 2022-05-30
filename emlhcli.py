@@ -1,13 +1,21 @@
 import argparse
-from eml_assess.eml_assess import EMLAssess
+from emlhound.emlhound import EMLHound
 import os
 from pprint import pprint
 import logging
-from eml_assess.models.eml import EML
+from emlhound.models.eml import EML
 
 def prepare_args():
-    art= ''''''
-    print(art+"Welcome to EML ASSESS CLI\n")
+    art= '''
+                   __
+          \ ______/ V`-,
+           }        /~~
+          /_)^ --,r'
+         |b      |b
+
+    Welcome to EMLHound CLI
+    '''
+    print(art)
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-v", "--verbose", help="increase output verbosity", action="store_true")
@@ -18,7 +26,6 @@ def prepare_args():
     parser.add_argument("--daemon", help="run as a daemon, requires config", action="store_true", required=False)
     parser.add_argument("--generate-config", help="generate a config file in /tmp", action="store_true")
     parser.add_argument("-t","--target", type=str, required=False, help="path to eml file or directory of emails")
-
 
     args = parser.parse_args()
     return args
@@ -54,7 +61,7 @@ def generate_config(cfg_path=None, vault_path=None):
     if(cfg_path is None):
         cfg_path = "/tmp/emlcfg.json"
     if not os.path.exists(cfg_path):
-        print("Config file not found, generating new config file at: ", cfg_path)
+        logging.log(msg="Config file not found, generating new config file at: "+str(cfg_path), level=logging.INFO)
         with open(cfg_path,"w") as f:
             f.write(tmp_cfg.format(vault_path=vault_path))
 
@@ -63,7 +70,6 @@ def main():
 
     if(args.verbose):
         format = f"[%(levelname)s] %(asctime)s <%(filename)s> %(funcName)s_L%(lineno)d- %(message)s"
-
         logging.basicConfig(format=format, level=logging.INFO, datefmt="%H:%M:%S")
     else:
         format = f"[%(levelname)s] %(asctime)s - %(message)s"
@@ -81,56 +87,53 @@ def main():
 
     if(args.daemon):
         if(not args.config):
-            print("Daemon requires config file")
+            logging.log(msg="Daemon requires config file", level=logging.ERROR)
             exit()
         else:
-            e = EMLAssess(config_path=args.config)
-            e.run()
+            e = EMLHound(config_path=args.config)
+            e.run() # script stops here if daemon is enabled
 
-    e = EMLAssess(config_path=args.config,vman_path=args.output)
+
+    # If not daemon, run EMLHound as a CLI tool
+    e = EMLHound(config_path=args.config,vman_path=args.output)
         
     if(args.directory):
+        if(args.target):
+            results = e.scan_directory(args.target, args.recursive, check_vault=False)
+        else:
+            logging.log(msg="No target specified, pass with (-t)", level=logging.ERROR)
+            exit()
 
-        results = e.scan_directory(args.target, args.recursive, check_vault=False)
     else: # scan single eml
-        if(args.verbose):
-            print("Scanning file: ", args.target)
-        try:
-            eml = EML(args.target)
-        except Exception as e:
-            print(e)
+        if(args.target):
+            if(args.verbose):
+                logging.log(msg="Scanning file: "+str(args.target), level=logging.INFO)
+            try:
+                eml = EML(args.target)
+            except Exception as e:
+                print(e)
 
-        results = e.scan_eml(eml,check_vault=False)
+            results = e.scan_eml(eml,check_vault=False)
+        else:
+            logging.log(msg="No target specified, pass with (-t), or run in daemon (--daemon) mode with config", level=logging.ERROR)
+            exit()
 
     if(type(results) is list):
         for report in results:
             if(args.output):
                 if(os.path.exists(f"{args.output}/{report.eml.md5}/report.json")):
-                    print(f"Report already exists for {report.eml.md5}, skipping")
+                    logging.warning(msg=f"Report already exists for {report.eml.md5}, skipping")
                 else:    
-                    print("writing report to: ", f"{args.output}/{report.eml.md5}/report.json")
+                    logging.info(f"writing EML Report to: {args.output}/{report.eml.md5}/report.json")
                     report.to_file(f"{args.output}/{report.eml.md5}/report.json")
 
-           # pprint(report.to_dict())
-        print("\n############################################################\n")
-
-
     else:
-        pprint(results.to_dict()["eml"])
         if(args.output):
             if(os.path.exists(f"{args.output}/{results.eml.md5}/report.json")):
-                print("Report already exists, skipping")
+                logging.warning(msg="Report already exists, skipping")
             else:
-                print("Writing report to: ", f"{args.output}/{results.eml.md5}/report.json")
+                logging.info(msg=f"Writing report to: {args.output}/{results.eml.md5}/report.json")
                 results.to_file(f"{args.output}/{results.eml.md5}/report.json")
-
-        #print("EML PATH: ",report.eml.get_path())
-        #print("\tService Reports: ", len(report.service_reports))
-        # for sr in report.service_reports:
-        #     print('\t'+sr.service_name)
-        #     pprint(sr.results)
-
-
 
 if __name__ == "__main__":
     main()

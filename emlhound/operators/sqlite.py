@@ -1,6 +1,6 @@
 import sqlite3
 
-from eml_assess.operators.operator import Operator
+from emlhound.operators.operator import Operator
 
 class SQLiteOperator(Operator):
     def __init__():

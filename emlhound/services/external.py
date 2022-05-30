@@ -1,10 +1,10 @@
 from typing import Dict
-from eml_assess.models.eml import EML
-from eml_assess.services.service import Service
+from emlhound.models.eml import EML
+from emlhound.services.service import Service
 import subprocess
 import time
 from datetime import datetime
-from eml_assess.models.reports import ServiceReport
+from emlhound.models.reports import ServiceReport
 import json 
 import logging
 class ExternalService(Service):

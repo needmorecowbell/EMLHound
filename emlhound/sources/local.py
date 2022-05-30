@@ -1,11 +1,11 @@
-from eml_assess.sources.source import Source
+from emlhound.sources.source import Source
 from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler
-from eml_assess.models.eml import EML
+from emlhound.models.eml import EML
 import logging
 import os
 
-from eml_assess.vaultman import VaultMan 
+from emlhound.vaultman import VaultMan 
 import redis
 
 

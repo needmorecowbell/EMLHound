@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Dict, List
-from eml_assess.models.eml import EML
+from emlhound.models.eml import EML
 import uuid
 import json
 import logging

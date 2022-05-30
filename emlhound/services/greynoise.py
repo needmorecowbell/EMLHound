@@ -1,4 +1,4 @@
-from eml_assess.services.service import Service
+from emlhound.services.service import Service
 
 class GreyNoiseService(Service):
     """GreyNoiseService

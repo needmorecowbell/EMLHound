@@ -1,5 +1,5 @@
-from eml_assess.models.reports import ServiceReport
-from eml_assess.services.service import Service
+from emlhound.models.reports import ServiceReport
+from emlhound.services.service import Service
 from datetime import datetime
 import requests
 import time
