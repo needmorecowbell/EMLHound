@@ -12,9 +12,7 @@ from emlhound.services.ipinfo import IPInfoService
 from emlhound.sources.local import LocalSource
 from emlhound.sources.source import Source
 from emlhound.vaultman import VaultMan
-from emlhound.plugins.api_server.app import APIServerPlugin
 import time 
-
 import logging
 
 class EMLHound():
@@ -62,8 +60,8 @@ class EMLHound():
 
             self.plugins = self.load_plugins(self.config.config["plugins"])
 
-
         else:
+            logging.info('No config file provided')
             self.config = None
             self.vman = VaultMan(vman_path) if vman_path else None # vault manager
             
@@ -144,8 +142,14 @@ class EMLHound():
                 match plugin["type"]:
                     case "api_server":
                         logging.info("Loading API Server Plugin")
-                        plugins.append(APIServerPlugin(eml_pool=self.eml_pool, vman=self.vman, port=plugin["port"],host=plugin["host"]))
 
+                        from emlhound.plugins.api_server.app import APIServerPlugin
+
+                        plugins.append(APIServerPlugin(eml_pool=self.eml_pool, vman=self.vman, port=plugin["port"],host=plugin["host"]))
+                    case "webserver":
+                        logging.info("Loading Web Server Plugin")
+                        from emlhound.plugins.webserver.app import WebServerPlugin
+                        plugins.append(WebServerPlugin(eml_pool=self.eml_pool, vman=self.vman, port=plugin["port"],host=plugin["host"]))
         return plugins
 
 

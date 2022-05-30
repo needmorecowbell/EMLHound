@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+  <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes"/>
+      <link rel="stylesheet" href="/static/css/bootstrap.min.css">
+      <link rel="stylesheet" href="/static/css/fontawesome/css/all.min.css">
+      <link rel="stylesheet" href="/static/css/style.css">
+
+      {% block extracss %}{% endblock %}
+
+
+      <script type="text/javascript" src="/static/js/jquery-3.6.0.min.js"></script>
+      <script type="text/javascript" src="/static/js/popper.min.js"></script>
+      <script type="text/javascript" src="/static/js/bootstrap.min.js"></script>
+
+      {% block extrajs %}{% endblock %}
+
+      <title>{% block title %}{% endblock %} - EMLHound</title>
+      {% block extrahead %}{% endblock %}
+
+  </head>
+  <body>    
+
+  {% include '_header_content.html' %}
+  
+  {% block sidenav %}{% endblock %}
+  <div id="content" class="">{% block content %}{% endblock %}</div>
+
+  {% include '_footer_content.html' %}
+
+  </body>
+</html>

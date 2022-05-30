@@ -6,10 +6,7 @@ import os
 
 
 
-print(os.getenv("EMLH_CFG"))
 config = Config(os.getenv("EMLH_CFG")).config
-
-print(config)
 
 eml_pool = redis.Redis(host=config["redis"]["host"], port=config["redis"]["port"])
 vman = VaultMan(config["vault_path"])

@@ -3,4 +3,5 @@ requests
 redis
 watchdog
 fastapi
+jinja2
 

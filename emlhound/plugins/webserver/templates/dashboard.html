@@ -1,0 +1,41 @@
+{% extends "layout.html" %}
+{% block extracss %}
+{% endblock %}
+{% block extrajs %}
+<script type="text/javascript" src="/static/js/dashboard.js"></script>
+{% endblock %}
+
+{% block title %}EML Hound Dashboard{% endblock %}
+
+{% block sidenav %}
+{% endblock %}
+
+{% block content %}
+
+<!-- Page Content -->
+  <div class="container">
+    <h1 class="mt-4">EMLHound Dashboard</h1>
+
+    <div class="row">
+      <div class="col-lg-3 col-md-6">
+        <div class="card h-100">
+          <div class="card-body">
+            <h4 class="card-title">Emails in Vault</h4>
+            <p class="card-text">{{stats.emails_in_vault}}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-3 col-md-6">
+        <div class="card h-100">
+          <div class="card-body">
+            <h4 class="card-title">Vault Size</h4>
+            <p class="card-text">{{ stats.vault_size }}</p>
+          </div>
+        </div>
+      </div>
+     
+
+  </div>
+     
+{% endblock %}
