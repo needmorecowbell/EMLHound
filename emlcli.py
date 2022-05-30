@@ -2,7 +2,6 @@ import argparse
 from eml_assess.eml_assess import EMLAssess
 import os
 from pprint import pprint
-import json
 import logging
 from eml_assess.models.eml import EML
 
@@ -19,6 +18,7 @@ def prepare_args():
     parser.add_argument("--daemon", help="run as a daemon, requires config", action="store_true", required=False)
     parser.add_argument("--generate-config", help="generate a config file in /tmp", action="store_true")
     parser.add_argument("-t","--target", type=str, required=False, help="path to eml file or directory of emails")
+
 
     args = parser.parse_args()
     return args
@@ -60,14 +60,15 @@ def generate_config(cfg_path=None, vault_path=None):
 
 def main():
     args = prepare_args()
-    format = f"[%(levelname)s] %(asctime)s <%(filename)s> %(funcName)s_L%(lineno)d- %(message)s"
 
     if(args.verbose):
+        format = f"[%(levelname)s] %(asctime)s <%(filename)s> %(funcName)s_L%(lineno)d- %(message)s"
+
         logging.basicConfig(format=format, level=logging.INFO, datefmt="%H:%M:%S")
     else:
+        format = f"[%(levelname)s] %(asctime)s - %(message)s"
+
         logging.basicConfig(format=format, level=logging.WARNING, datefmt="%H:%M:%S")
-
-
     
     if(args.config):
         if(not os.path.exists(args.config)):
@@ -112,6 +113,8 @@ def main():
 
            # pprint(report.to_dict())
         print("\n############################################################\n")
+
+
     else:
         pprint(results.to_dict()["eml"])
         if(args.output):

@@ -64,7 +64,6 @@ class EMLAssess():
                     eml = EML(eml_path, attachments=[])
 
                     report = self.scan_eml(eml,check_vault=False)
-                    print("report: ", report)
                     # save report to vault
 
                     report.eml.path=eml_path
@@ -134,7 +133,7 @@ class EMLAssess():
         if(self.vman is not None and check_vault):
             if(self.vman.in_vault(eml)):
                 logging.log(msg=f'EML {eml.md5} already in vault', level=logging.INFO)
-                return self.vman.retrieve_report_from_vault(eml)
+                return self.vman.retrieve_report_from_vault(eml.md5)
 
 
         if(self.vman):

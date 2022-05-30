@@ -1,3 +1,4 @@
+from typing import List
 from eml_assess.config import Config
 import os
 from eml_assess.models.eml import EML
@@ -11,16 +12,113 @@ import logging
 class VaultMan():
     """Vault Manager
     
-    This class is responsible for managing input and output to the EML vault."""
+    This class is responsible for managing input and output to the EML vault.
+    """
+
     def __init__(self, vault_path:str):
         self.path = vault_path
+        self.stats = self.refresh_stats()
+        self.refresh_stats()
+
+
+    def refresh_stats(self)->dict:
+        """
+        Gets statistics about the vault
+
+        :return: Dictionary with statistics about vault
+        """
+        stats = {}
+        stats["vault_size"] = self.human_readable_bytes(self.get_size(self.path))
+        stats["emails_in_vault"] = len(os.listdir(self.path))
+        stats["vault_attachments"] = len([self.get_attachments_from_workspace(eml_md5) for eml_md5 in os.listdir(self.path)])
+        
+        return stats
+
+
+    def get_all_attachments_with_mimetype(self,mimetype_short:str)->List[EMLAttachment]:
+        """
+        Returns a list of all attachments in the vault with the given mimetype
+
+        :param mimetype_short: Short mimetype
+        :return: List of EMLAttachment objects
+        """
+
+        results = []
+
+        for eml_hash in  self.get_eml_hashes():
+            attachments = self.get_attachments_from_workspace(eml_hash)
+            for attachment in attachments:
+                if(attachment.mime_type_short == mimetype_short):
+                    results.append(attachment)
+                
+        return results
+
+    def get_eml_hashes(self)->list:
+        return os.listdir(self.path)
     
+    def get_size(self, path:str)->int:
+        """
+        Returns the size in bytes of directory (sum of contents) or file at the given path
+
+        :param path: Path to the directory or file
+        :return: Size in bytes
+        """
+
+        if(os.path.isdir(path)):
+            return sum([entry.stat().st_size for entry in os.scandir(path)])
+        else:
+            return os.stat(path).st_size
+
+    
+    def human_readable_bytes(self,bytes):
+        suffixes = ['B', 'K', 'M', 'G', 'T', 'P']
+
+        i = 0
+        while (bytes >= 1024 and i < len(suffixes)-1):
+            bytes /= 1024.
+            i += 1
+        
+        f = ('%.2f' % bytes).rstrip('0').rstrip('.')
+        return '%s %s' % (f, suffixes[i])
+
+
     def in_vault(self,eml:EML)->bool:
         """
         Checks if the eml file is in the vault
+
+        :param eml: EML file to be checked
+        :return: True if the file is in the vault, False otherwise
         """
         return os.path.exists(f"{self.path}/{eml.md5}")
+    
+    def get_path_from_hash(self,md5:str)->str:
+        """
+        Finds the path for a given hash
+
+        :param md5: string MD5 hash of the workspace
+        """
+        for dir,_,files in os.walk(self.path):
+            for file in files:
+                if(file == md5):
+                    return f"{self.path}/{dir}/{file}"
+
+    def get_attachments_from_workspace(self, eml_md5:str)->list:
+        """
+        Returns a list of all workspace paths with attachments
+
+        :param eml_md5: string MD5 hash of the EML file
+        :return: List of paths to attachments
+        """
+
+        if(eml_md5 in os.listdir(self.path)):
+            report = self.retrieve_report_from_vault(eml_md5=eml_md5)
+            return report.eml.attachments
+
+        else:
+            logging.INFO(f"{eml_md5} not found in vault")
+            return []
         
+    
     def initialize_workspace(self, eml:EML, delete_original:bool=False) -> str:
         """ Initializes a new workspace in the vault for the given EML file
 
@@ -58,12 +156,12 @@ class VaultMan():
         attachment.to_file(f"{workspace}/attachments/{attachment.hashes['md5']}")
 
 
-    def retrieve_report_from_vault(self,eml)->EMLReport:
+    def retrieve_report_from_vault(self,eml_md5:str)->EMLReport:
         """
         Retrieves the EMLReport from the vault
         """
         try:
-            with open(f"{self.path}/{eml.md5}/report.json") as f:
+            with open(f"{self.path}/{eml_md5}/report.json") as f:
                 report = json.load(f)
 
                 attachments = []
