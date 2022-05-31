@@ -1,0 +1,9 @@
+.reports-list-container{
+    padding: 10px;
+}
+
+.report-action{
+    cursor: pointer;
+    color: black;
+    
+}
