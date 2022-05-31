@@ -1,5 +1,7 @@
 # EMLHound
 
+<p align="center"><img width="256px" src="https://user-images.githubusercontent.com/7833164/171084979-e8b46868-e94f-4a2d-9e9a-db4f03858f30.png" align="middle"></p>
+
 ## Usage
 
 - You can use this project as a library, a cli tool, a web api, a web service -- and much more.
@@ -24,7 +26,7 @@ reports = e.scan_directory("/path/to/directory", recursive=False)
 
 for report in reports
   pprint(report.eml.header)
-    
+
 ```
 
 ```python
