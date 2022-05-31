@@ -9,6 +9,7 @@ import json
 import shutil
 import logging
 
+
 class VaultMan():
     """Vault Manager
     
@@ -161,13 +162,34 @@ class VaultMan():
         attachment.to_file(f"{workspace}/attachments/{attachment.hashes['md5']}")
 
 
+    def delete_workspace(self, eml_md5:str)->None:
+        """
+        Deletes the workspace with the given MD5 hash
+
+        :param eml_md5: MD5 hash of the workspace
+        """
+        workspace = f"{self.path}/{eml_md5}"
+
+        if(os.path.exists(workspace)):
+            shutil.rmtree(workspace)
+        else:
+            logging.log(msg=f"Failed to delete workspace: {workspace} does not exist", level=logging.WARNING)
+            raise Exception(f"Failed to delete workspace: {workspace} does not exist")
+
+
     def retrieve_report_from_vault(self,eml_md5:str)->EMLReport:
         """
         Retrieves the EMLReport from the vault
+
+        :param eml_md5: MD5 hash of the EML file
+        :return: EMLReport object
         """
+
         try:
             with open(f"{self.path}/{eml_md5}/report.json") as f:
                 report = json.load(f)
+
+                logging.info("Retrieved report file from vault")
 
                 attachments = []
 
@@ -179,12 +201,22 @@ class VaultMan():
                                         mime_type_short=attachment["mime_type_short"],
                                         hashes=attachment["hashes"])
                     attachments.append(emla)
+                
+                logging.info("Got all attachments from report file")
 
-                report_eml = EML(report["eml"]["path"],
+                path = report["eml"].get("path")
+                if(path is None):
+                    path= f'{self.path}/{eml_md5}/{eml_md5}'
+
+
+                report_eml = EML(path,
                                  ip_addresses=report["eml"]["ip_addresses"],
                                  header=report["eml"]["header"],
                                  body=report["eml"]["body"],
                                  attachments=attachments)
+                
+                logging.info("EML file created from report file")
+
                 
                 service_reports= []
                 for sr in report["service_reports"]:
@@ -193,6 +225,9 @@ class VaultMan():
                                       sr["service_type"], sr["timestamp"],
                                       sr["exec_time"], sr["results"])
                     )
+                
+                logging.info("Service Reports created from report file")
+
                 return EMLReport(report_eml,service_reports=service_reports, timestamp=report["timestamp"])
         except Exception as e:
             logging.log(msg=str(e), level=logging.ERROR)

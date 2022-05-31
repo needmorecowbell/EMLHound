@@ -1,7 +1,6 @@
 import argparse
 from emlhound.emlhound import EMLHound
 import os
-from pprint import pprint
 import logging
 from emlhound.models.eml import EML
 
@@ -67,6 +66,9 @@ def generate_config(cfg_path=None, vault_path=None):
 
 def main():
     args = prepare_args()
+
+    if(args.config is None): # if we don't have a config file, try to get one from the environment. 
+        args.config = os.getenv("EMLH_CFG", None)
 
     if(args.verbose):
         format = f"[%(levelname)s] %(asctime)s <%(filename)s> %(funcName)s_L%(lineno)d- %(message)s"

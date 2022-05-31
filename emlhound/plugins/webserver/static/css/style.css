@@ -1,14 +1,21 @@
+.navbar {
+    background-color: #27B0A3 !important;
+
+}
+
+.reports-list-container{
+    padding: 10px;
+}
+
 #footer {
     /* append footer to bottom of page */
     position: fixed;
     bottom: 0;
-    padding: 2em 0 1em 0;
-    margin: 0;
+    padding:  10px;
     font-size: small;
     text-align: center;
     background-color: #94a9b1;
     min-width: 100%;
-    overflow: hidden;
     -webkit-flex-shrink: 0;
     -ms-flex-negative: 0;
     flex-shrink: 0;

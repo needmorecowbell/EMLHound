@@ -1,0 +1,33 @@
+{% extends "layout.html" %}
+{% block extracss %}
+{% endblock %}
+{% block extrajs %}
+<script type="text/javascript" src="/static/js/dashboard.js"></script>
+{% endblock %}
+
+{% block title %}EML Hound Dashboard{% endblock %}
+
+{% block sidenav %}
+{% endblock %}
+
+{% block content %}
+
+<!-- Page Content -->
+  <div class="container">
+    <h1 class="mt-4">EML Report: {{report.eml.md5}}</h1>
+
+    <div class="body">
+        <div class="row">
+            <div class="eml-header-container">
+                <textarea>
+                    {{report.eml.header}}
+                </textarea>
+            </div>
+
+        </div>
+    </div>
+     
+
+  </div>
+     
+{% endblock %}

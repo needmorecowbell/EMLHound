@@ -1,0 +1,43 @@
+{% extends "layout.html" %}
+{% block extracss %}
+
+<link rel="stylesheet" href="//cdn.datatables.net/1.12.1/css/jquery.dataTables.min.css">
+
+{% endblock %}
+{% block extrajs %}
+<script type="text/javascript" src="/static/js/reports.js"></script>
+<script src="//cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
+{% endblock %}
+
+{% block title %}EMLHound Reports{% endblock %}
+
+{% block sidenav %}
+{% endblock %}
+
+{% block content %}
+
+<!-- Page Content -->
+
+  <div class="reports-list-container">
+    <table id="reports-table">
+      <thead>
+        <tr>
+          <th>Hash</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for hash in report_hashes %}
+        <tr>
+          <td scope="row"><a href="/report/{{hash}}">{{hash}}</a></td>
+          <td> <a class="report-action action-delete-workspace"><span class="fa fa-x"></span></a> </td>
+        {% endfor %}
+        </tr>
+      
+      </tbody>
+    </table>
+  </div>
+
+  </div>
+     
+{% endblock %}

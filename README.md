@@ -14,14 +14,28 @@
 
 - The library is the most flexible way to use EMLHound. You can quickly extract and identify attachments, as well as run a suite of tools to determine more information about the file being investigated. 
 
+Retrieve all headers from eml files in a directory:
 ```python
 from emlhound.emlhound import EMLHound
 from pprint import pprint
 
-e = EMLHound()
-report = e.scan(path="/home/user/Downloads/risky.eml")
-print("MD5 hashes of attachments from file: ")
-attachments = [attachment.hashes["md5"] for attachment in report.eml.attachments]
+e = EMLHound(vman_path="/home/user/eml_vault")
+reports = e.scan_directory("/path/to/directory", recursive=False)
+
+for report in reports
+  pprint(report.eml.header)
+    
+```
+
+```python
+from emlhound.vaultman import VaultMan
+from pprint import pprint
+
+vman = VaultMan(path="/home/user/eml_vault")
+
+attachments = vman.get_all_attachments_with_mimetype("application/pdf")
+print("Attachments: ", len(attachments))
+pprint([attachment.to_dict() for  attachment in attachments])
 
 ```
 
@@ -36,7 +50,7 @@ options:
   -d, --directory       set target to directory of emails
   -r, --recursive       search a directory recursively
   -c CONFIG, --config CONFIG
-                        config file path
+                        config file path (or env var EMLH_CFG)
   -o OUTPUT, --output OUTPUT
                         output file/directory/workspace path
   --daemon              run as a daemon, requires config
@@ -52,9 +66,13 @@ options:
 
 Temporary Fix:
 
-If any plugins are enabled, you must include the config path as an environment variable, stored as `EMLH_CFG`
+If any plugins are enabled, you must include the config path as an environment variable, stored as `EMLH_CFG`. Conveniently, this allows you to not have to enter in your config path each time: 
 
-`-> % EMLH_CFG="/path/to/config.json" python3 emlhcli.py --daemon --config local.config.json -v`
+`-> % export EMLH_CFG="/path/to/config.json"`
+`-> % python3 emlhcli.py --daemon -v`
+
+However, the problem is that you can't run multiple daemon instances of EMLHound with different configs. To fix this, I would need to reevaluate how configs are passed into the structure. Merge requests/issues with advice on this topic are much appreciated.
+
 
 
 
