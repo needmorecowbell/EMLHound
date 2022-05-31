@@ -2,14 +2,16 @@
 
 <p align="center"><img width="256px" src="https://user-images.githubusercontent.com/7833164/171084979-e8b46868-e94f-4a2d-9e9a-db4f03858f30.png" align="middle"></p>
 
-## Usage
+## Getting Started
 
-- You can use this project as a library, a cli tool, a web api, a web service -- and much more.
+- `git clone https://github.com/needmorecowbell/EMLHound` 
 
 - install requirements from requirements.txt: `pip install -r requirements.txt`
 - start or connect to an existing Redis Server, pass the credentials into your `config.json` in the `redis` section. 
 - set up your config.json file if you would like to run services. To just run the commandline tool without saving files to a vault, you don't need to provide a config
 
+
+## Usage
 
 
 **Library**
@@ -17,6 +19,7 @@
 - The library is the most flexible way to use EMLHound. You can quickly extract and identify attachments, as well as run a suite of tools to determine more information about the file being investigated. 
 
 Retrieve all headers from eml files in a directory:
+
 ```python
 from emlhound.emlhound import EMLHound
 from pprint import pprint
@@ -71,15 +74,14 @@ Temporary Fix:
 If any plugins are enabled, you must include the config path as an environment variable, stored as `EMLH_CFG`. Conveniently, this allows you to not have to enter in your config path each time: 
 
 `-> % export EMLH_CFG="/path/to/config.json"`
+
 `-> % python3 emlhcli.py --daemon -v`
 
 However, the problem is that you can't run multiple daemon instances of EMLHound with different configs. To fix this, I would need to reevaluate how configs are passed into the structure. Merge requests/issues with advice on this topic are much appreciated.
 
 
-
-
-
 **Tip: Too Complicated?**
+
 - You don't need to use the config, or know all about the structure of EMLHound.
 
 -  While sources have to be defined for daemon use, alternatively you can directly scan a file or folder by using the command line tool. This avoids Sources, the EMLPool, and Operators altogether. The only service that runs in this mode is the EMLParser service.
@@ -92,7 +94,9 @@ However, the problem is that you can't run multiple daemon instances of EMLHound
 ### Sources
 
 - [Sources](docs/Sources/README.md) are places where new EML files to be  can be found
+
 - The Local Source is a directory watcher, looking for recently created files in the directory being watched with an *.eml pattern
+
 - If a file is found, it is added to the EMLPool for the next available scan job.
 
 ### Operators
@@ -138,7 +142,9 @@ However, the problem is that you can't run multiple daemon instances of EMLHound
 ### Plugins
 
 - There are currently two plugins available, the web server and the api server. These can be configured in `config.json`
+
 - Check the usage section for information abouut how to run these
+
 - Plugins load under separate threads, all managed under the EMLHound application. These apps could just as easily be run separately by using the library.
 
 
