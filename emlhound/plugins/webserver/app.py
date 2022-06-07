@@ -29,7 +29,6 @@ class WebServerPlugin(Plugin):
     
 
         self.server.include_router(router=router)
-        
 
     def activate(self):
         logging.info(f"Starting API Server on {self.host}:{self.port}")

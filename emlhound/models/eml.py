@@ -61,6 +61,7 @@ class EML():
             "ip_addresses":self.ip_addresses,
             "header":self.header,
             "body":self.body,
+            "md5":self.md5,
             "attachments": [attachment.to_dict() for attachment in self.attachments]
         }
       

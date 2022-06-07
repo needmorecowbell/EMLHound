@@ -23,13 +23,17 @@
       <thead>
         <tr>
           <th>Hash</th>
+          <th>Scan Date</th>
+          <th>Sent Date</th>
           <th>Actions</th>
         </tr>
       </thead>
       <tbody>
-        {% for hash in report_hashes %}
+        {% for report in reports %}
         <tr>
-          <td scope="row"><a href="/report/{{hash}}">{{hash}}</a></td>
+          <td scope="row"><a href="/report/{{report.eml.md5}}">{{report.eml.md5}}</a></td>
+          <td>{{report.timestamp | datetimeformat}}</td>
+          <td>{{report.eml.header.header.get("date",[])[0]}}</td>
           <td> <a class="report-action action-delete-workspace"><span class="fa fa-x"></span></a> </td>
         {% endfor %}
         </tr>

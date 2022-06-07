@@ -1,7 +1,8 @@
 $(document).ready( function () {
     $('#reports-table').DataTable({
         "scrollY":"50vh",
-        "scrollCollapse": true
+        "scrollCollapse": true,
+        "order": [[1, 'desc']],
     });
 
 

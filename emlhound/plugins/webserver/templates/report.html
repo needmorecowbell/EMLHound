@@ -13,21 +13,84 @@
 {% block content %}
 
 <!-- Page Content -->
-  <div class="container">
-    <h1 class="mt-4">EML Report: {{report.eml.md5}}</h1>
+<div class="container">
+  <h1 class="mt-4">EML Report: {{report.eml.md5}}</h1>
 
-    <div class="body">
-        <div class="row">
-            <div class="eml-header-container">
-                <textarea>
-                    {{report.eml.header}}
-                </textarea>
-            </div>
-
-        </div>
+  <div class="body">
+    <div class="row">
+      <div class="report-tag-banner">
+        {{report.get(tags,"")}}
+      </div>
     </div>
-     
+    <div class="row">
+      <div class="col-md-6">
+        <div class="eml-header-container">
+          <div class="row header-subject">
+            <p class="header-key">Subject:</p>
+            <p class="header-value">{{report.eml.header.subject}}</p>
+          </div>
 
+          <div class="row header-from">
+            <p class="header-key">From:</p>
+            <p class="header-value">{{report.eml.header.from}}</p>
+          </div>
+
+          {% for to in report.eml.header.to %}
+          <div class="row header-to">
+            <p class="header-key">To:</p>
+            <p class="header-value">{{to}}</p>
+          </div>
+          {% endfor %}
+
+          {% for dto in report.eml.header.to %}
+          <div class="row header-delivered-to">
+            <p class="header-key">Delivered To:</p>
+            <p class="header-value">{{dto}}</p>
+          </div>
+          {% endfor %}
+
+          <div class="row header-date">
+            <p class="header-key">Date:</p>
+            <p class="header-value">{{report.eml.header.header.get("date",[])[0]}}</p>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="row header-received-spf">
+            <p class="header-key">Received SPF:</p>
+            <p class="header-value">{{report.eml.header.header.get(received_spf)}}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% if report.eml.attachments %}
+
+      <div class="row attachments-section">
+        <h3 class="attachments-header">Attachments</h3>
+
+          {% for attachment in report.eml.attachments %}
+          <div class="attachment-container">
+            
+            <div class="row attachment-filename">
+              <p class="attachment-key">File name:</p>
+              <p class="attachment-value">{{attachment.file_name}}</p>
+            </div>
+            <div class="row attachment-mimetype">
+              <p class="attachment-key">Mimetype(short):</p>
+              <p class="attachment-value">{{attachment.mime_type_short}}</p>
+            </div>
+          </div>     
+          {% endfor %}
+      </div> 
+    {% endif %}
+   
+    <div class="row">
+      <div class="col-md-6">
+        <a class="btn btn-primary">Download Header</a>
+      </div>
+    </div>
   </div>
-     
+
+</div>
+
 {% endblock %}

@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List
 from emlhound.config import Config
 import os
@@ -186,49 +187,52 @@ class VaultMan():
         """
 
         try:
+            report = None
             with open(f"{self.path}/{eml_md5}/report.json") as f:
                 report = json.load(f)
 
-                logging.info("Retrieved report file from vault")
+            logging.debug("Retrieved report file from vault")
 
-                attachments = []
+            attachments = []
 
-                for attachment in report["eml"]["attachments"]:
-                    emla = EMLAttachment(file_type=attachment["file_type"],
-                                        file_size=attachment["file_size"],
-                                        file_extension=attachment["file_extension"],
-                                        mime_type=attachment["mime_type"],
-                                        mime_type_short=attachment["mime_type_short"],
-                                        hashes=attachment["hashes"])
-                    attachments.append(emla)
-                
-                logging.info("Got all attachments from report file")
+            for attachment in report["eml"]["attachments"]:
+                emla = EMLAttachment(file_type=attachment["file_type"],
+                                    file_size=attachment["file_size"],
+                                    file_extension=attachment["file_extension"],
+                                    mime_type=attachment["mime_type"],
+                                    mime_type_short=attachment["mime_type_short"],
+                                    hashes=attachment["hashes"])
+                attachments.append(emla)
+            
+            logging.debug("Got all attachments from report file")
 
-                path = report["eml"].get("path")
-                if(path is None):
-                    path= f'{self.path}/{eml_md5}/{eml_md5}'
+            path = report["eml"].get("path")
+            if(path is None):
+                path= f'{self.path}/{eml_md5}/{eml_md5}'
 
 
-                report_eml = EML(path,
-                                 ip_addresses=report["eml"]["ip_addresses"],
-                                 header=report["eml"]["header"],
-                                 body=report["eml"]["body"],
-                                 attachments=attachments)
-                
-                logging.info("EML file created from report file")
+            report_eml = EML(path,
+                                ip_addresses=report["eml"]["ip_addresses"],
+                                header=report["eml"]["header"],
+                                body=report["eml"]["body"],
+                                attachments=attachments)
+            
+            logging.debug("EML file created from report file")
 
-                
-                service_reports= []
-                for sr in report["service_reports"]:
-                    service_reports.append(
-                        ServiceReport(sr["response"], sr["service_name"],
-                                      sr["service_type"], sr["timestamp"],
-                                      sr["exec_time"], sr["results"])
-                    )
-                
-                logging.info("Service Reports created from report file")
+            
+            service_reports= []
+            for sr in report["service_reports"]:
+                service_reports.append(
+                    ServiceReport(sr["response"], sr["service_name"],
+                                    sr["service_type"], sr["timestamp"],
+                                    sr["exec_time"], sr["results"])
+                )
+            
+            logging.debug("Service Reports created from report file")
 
-                return EMLReport(report_eml,service_reports=service_reports, timestamp=report["timestamp"])
+            ts = datetime.fromisoformat(report["timestamp"])
+            
+            return EMLReport(report_eml,service_reports=service_reports, timestamp=ts)
         except Exception as e:
             logging.log(msg=str(e), level=logging.ERROR)
             return None
