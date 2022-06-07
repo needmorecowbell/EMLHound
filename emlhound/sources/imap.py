@@ -33,8 +33,8 @@ class IMAPSource(Source):
             mail.select(self.folder)
             status, data = mail.search(None, 'ALL')
             mail_ids = data[0].split()
-
-            logging.info("Found %d emails in %s" % (len(mail_ids), self.folder))
+            new_email_count = 0
+            logging.debug("Found %d total emails in %s" % (len(mail_ids), self.folder))
             for mail_id in mail_ids:
                 status, data = mail.fetch(mail_id, '(RFC822)')
                 md5 = hashlib.md5(data[0][1]).hexdigest()

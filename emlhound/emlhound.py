@@ -9,6 +9,7 @@ from emlhound.services.eml_parser import EMLParserService
 from emlhound.config import Config
 from emlhound.services.external import ExternalService
 from emlhound.services.ipinfo import IPInfoService
+from emlhound.sources.gmail import GMailSource
 from emlhound.sources.imap import IMAPSource
 from emlhound.sources.local import LocalSource
 from emlhound.sources.source import Source
@@ -88,10 +89,11 @@ class EMLHound():
 
                     if(job.get("delete_after_scan")):
                         os.remove(job["path"])
-                        logging.log(msg=f"Deleted eml after scan", level=logging.INFO)
+                        report.eml.path=f"{self.vman.path}/{report.eml.md5}/{report.eml.md5}"
+                        logging.debug(msg=f"Deleted eml after scan")
 
                     self.vman.add_eml_report_to_workspace(report)
-                    logging.log(msg=f"EML Report {eml.md5} Scan Complete, added report to workspace", level=logging.INFO)
+                    logging.info(msg=f"EML Report {eml.md5} Scan Complete, added report to workspace")
 
                 time.sleep(1)
 
@@ -114,8 +116,9 @@ class EMLHound():
                     case "local":
                         sources.append(LocalSource(source["path"], source["recursive"], eml_pool=self.eml_pool, name=source["name"]))
                     case "imap":
-                        sources.append(IMAPSource(source["username"],source["password"], eml_pool=self.eml_pool, vman=self.vman, folder=source["target_folder"],server=source["server"], name=source["name"]))
-
+                        sources.append(IMAPSource(source["username"],source["password"], eml_pool=self.eml_pool, vman=self.vman, folder=source["target_folder"],server=source["server"], name=source["name"], period=source["period"]))
+                    case "gmail":
+                        sources.append(GMailSource(source["key_file"],source["token_file"],self.eml_pool, self.vman, folder=source["target_folder"], name=source["name"], period=source["period"]))
         return sources
 
 
