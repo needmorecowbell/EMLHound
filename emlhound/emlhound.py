@@ -9,12 +9,13 @@ from emlhound.services.eml_parser import EMLParserService
 from emlhound.config import Config
 from emlhound.services.external import ExternalService
 from emlhound.services.ipinfo import IPInfoService
+from emlhound.sources.imap import IMAPSource
 from emlhound.sources.local import LocalSource
 from emlhound.sources.source import Source
 from emlhound.vaultman import VaultMan
 import time 
 import logging
-
+import json
 class EMLHound():
     """EMLHound Application"""
 
@@ -77,14 +78,18 @@ class EMLHound():
         try:
             while True:
                 if(self.eml_pool.llen("eml_queue")>0):
-                    eml_path = self.eml_pool.lpop("eml_queue")
+                    job = json.loads(self.eml_pool.lpop("eml_queue"))
                     logging.log(msg=f"Retrieved eml from queue", level=logging.INFO)
-                    eml = EML(eml_path, attachments=[])
+                    eml = EML(job["path"], attachments=[])
 
-                    report = self.scan_eml(eml,check_vault=False)
-
+                    report = self.scan_eml(eml,check_vault=job.get("check_vault",False))
                     # save report to vault
-                    report.eml.path=eml_path
+                    report.eml.path=job["path"]
+
+                    if(job.get("delete_after_scan")):
+                        os.remove(job["path"])
+                        logging.log(msg=f"Deleted eml after scan", level=logging.INFO)
+
                     self.vman.add_eml_report_to_workspace(report)
                     logging.log(msg=f"EML Report {eml.md5} Scan Complete, added report to workspace", level=logging.INFO)
 
@@ -108,6 +113,8 @@ class EMLHound():
                 match source["type"]:
                     case "local":
                         sources.append(LocalSource(source["path"], source["recursive"], eml_pool=self.eml_pool, name=source["name"]))
+                    case "imap":
+                        sources.append(IMAPSource(source["username"],source["password"], eml_pool=self.eml_pool, vman=self.vman, folder=source["target_folder"],server=source["server"], name=source["name"]))
 
         return sources
 

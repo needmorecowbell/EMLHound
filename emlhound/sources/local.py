@@ -4,6 +4,7 @@ from watchdog.events import PatternMatchingEventHandler
 from emlhound.models.eml import EML
 import logging
 import os
+import json
 
 from emlhound.vaultman import VaultMan 
 import redis
@@ -39,8 +40,8 @@ class EMLHandler (PatternMatchingEventHandler):
             
     def check(self, event):
         logging.log(msg="Local Source EML Detected: "+event.src_path, level=logging.INFO)
-
-        self.eml_pool.lpush("eml_queue",event.src_path)
+        job = {"path":event.src_path}
+        self.eml_pool.lpush("eml_queue", json.dumps(job))
 
         logging.log(msg="Eml path added to redis pool", level=logging.INFO)
 

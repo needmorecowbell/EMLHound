@@ -13,6 +13,16 @@
             "recursive": true,
             "delete_original":false,
             "path":"/home/user/Desktop/eml_ingress"
+        },
+        {
+            "name":"IMAP Ingress",
+            "server":"imap.gmail.com",
+            "enabled":false,
+            "type":"imap",
+            "period":5,
+            "target_folder":"Inbox",
+            "username":"",
+            "password":""
         }
     ],
 
