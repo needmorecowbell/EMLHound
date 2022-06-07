@@ -60,7 +60,7 @@ def generate_config(cfg_path=None, vault_path=None):
     if(cfg_path is None):
         cfg_path = "/tmp/emlcfg.json"
     if not os.path.exists(cfg_path):
-        logging.log(msg="Config file not found, generating new config file at: "+str(cfg_path), level=logging.INFO)
+        logging.info(msg="Config file not found, generating new config file at: "+str(cfg_path))
         with open(cfg_path,"w") as f:
             f.write(tmp_cfg.format(vault_path=vault_path))
 
@@ -89,7 +89,7 @@ def main():
 
     if(args.daemon):
         if(not args.config):
-            logging.log(msg="Daemon requires config file", level=logging.ERROR)
+            logging.error(msg="Daemon requires config file")
             exit()
         else:
             e = EMLHound(config_path=args.config)

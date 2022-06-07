@@ -9,6 +9,7 @@ from emlhound.services.eml_parser import EMLParserService
 from emlhound.config import Config
 from emlhound.services.external import ExternalService
 from emlhound.services.ipinfo import IPInfoService
+from emlhound.sources.gmail import GMailSource
 from emlhound.sources.imap import IMAPSource
 from emlhound.sources.local import LocalSource
 from emlhound.sources.source import Source
@@ -79,7 +80,7 @@ class EMLHound():
             while True:
                 if(self.eml_pool.llen("eml_queue")>0):
                     job = json.loads(self.eml_pool.lpop("eml_queue"))
-                    logging.log(msg=f"Retrieved eml from queue", level=logging.INFO)
+                    logging.debug(msg=f"Retrieved eml from queue")
                     eml = EML(job["path"], attachments=[])
 
                     report = self.scan_eml(eml,check_vault=job.get("check_vault",False))
@@ -88,10 +89,11 @@ class EMLHound():
 
                     if(job.get("delete_after_scan")):
                         os.remove(job["path"])
-                        logging.log(msg=f"Deleted eml after scan", level=logging.INFO)
+                        report.eml.path=f"{self.vman.path}/{report.eml.md5}/{report.eml.md5}"
+                        logging.debug(msg=f"Deleted eml after scan")
 
                     self.vman.add_eml_report_to_workspace(report)
-                    logging.log(msg=f"EML Report {eml.md5} Scan Complete, added report to workspace", level=logging.INFO)
+                    logging.info(msg=f"EML Report {eml.md5} Scan Complete, added report to workspace")
 
                 time.sleep(1)
 
@@ -114,8 +116,9 @@ class EMLHound():
                     case "local":
                         sources.append(LocalSource(source["path"], source["recursive"], eml_pool=self.eml_pool, name=source["name"]))
                     case "imap":
-                        sources.append(IMAPSource(source["username"],source["password"], eml_pool=self.eml_pool, vman=self.vman, folder=source["target_folder"],server=source["server"], name=source["name"]))
-
+                        sources.append(IMAPSource(source["username"],source["password"], eml_pool=self.eml_pool, vman=self.vman, folder=source["target_folder"],server=source["server"], name=source["name"], period=source["period"]))
+                    case "gmail":
+                        sources.append(GMailSource(source["key_file"],source["token_file"],self.eml_pool, self.vman, folder=source["target_folder"], name=source["name"], period=source["period"]))
         return sources
 
 
@@ -220,15 +223,15 @@ class EMLHound():
         :return: EMLReport
         """
 
-        logging.log(msg="EML Scan entered: "+eml.md5, level=logging.INFO)
+        logging.debug(msg="EML Scan entered: "+eml.md5)
         if(self.vman is not None and check_vault):
             if(self.vman.in_vault(eml)):
-                logging.log(msg=f'EML {eml.md5} already in vault', level=logging.INFO)
+                logging.debug(msg=f'EML {eml.md5} already in vault')
                 return self.vman.retrieve_report_from_vault(eml.md5)
 
 
         if(self.vman):
-            logging.log(msg=f"Initializing workspace for {eml.md5}", level=logging.INFO)
+            logging.debug(msg=f"Initializing workspace for {eml.md5}")
             workspace = self.vman.initialize_workspace(eml)
 
         report= EMLReport(eml, service_reports=[])
@@ -263,9 +266,7 @@ class EMLHound():
 
             if(self.vman):
                 self.vman.add_service_report_to_workspace(sr,eml)
-                logging.log(msg=f"EML {report.eml.md5} service report added to Vault", level=logging.INFO)
-
-
+                logging.debug(msg=f"EML {report.eml.md5} service report added to Vault")
 
         if(self.vman):
             # Save all attachments

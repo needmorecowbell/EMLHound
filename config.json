@@ -23,6 +23,16 @@
             "target_folder":"Inbox",
             "username":"",
             "password":""
+        },
+        {
+            "name":"gmail.com Ingress",
+            "enabled":false,
+            "type":"gmail",
+            "period":5,
+            "server":"imap.gmail.com",
+            "target_folder":"INBOX",
+            "key_file":"/home/user/path/gauth_0.json",
+            "token_file":"/home/user/path/gtoken_0.json"
         }
     ],
 

@@ -34,6 +34,7 @@ class IMAPSource(Source):
             status, data = mail.search(None, 'ALL')
             mail_ids = data[0].split()
 
+            new_email_count = 0
             logging.info("Found %d emails in %s" % (len(mail_ids), self.folder))
             for mail_id in mail_ids:
                 status, data = mail.fetch(mail_id, '(RFC822)')
@@ -44,13 +45,14 @@ class IMAPSource(Source):
                 if not os.path.exists(path) and md5 not in self.vman.get_eml_hashes(): # don't add if it's about to be scanned or is already scanned
                     hashlib.md5(data[0][1])
                     with open(path, "wb") as f:
-                        logging.info(f"Writing EML to {path}")
+                        logging.debug(f"Writing EML to {path}")
                         f.write(data[0][1])
 
                     job={"path":path, "delete_after_scan":True}
 
                     self.eml_pool.rpush("eml_queue", json.dumps(job))
+                    new_email_count+=1
         
-            logging.info(f"Source {self.name} scan on {self.username} completed, waiting {str(self.period)} minutes before next scan")
+            logging.info(f"Source {self.name} scan on {self.username} completed. Found {new_email_count} new emails. Waiting {str(self.period)} minutes before next scan")
             time.sleep(self.period*60)
 
